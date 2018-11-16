@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -32,7 +35,6 @@ func (p *Proxy) handler(req *http.Request) http.Handler {
 		log.Println("WEBSOCKET")
 		return websocketHandler("127.0.0.1:8080")
 	}
-
 	return reverseProxyHandler(url)
 }
 
@@ -41,6 +43,12 @@ func reverseProxyHandler(target *url.URL) http.Handler {
 		Director: func(req *http.Request) {
 			req.URL.Host = target.Host
 			req.URL.Scheme = target.Scheme
+
+		},
+		ModifyResponse: func(resp *http.Response) error {
+			body := ioutil.NopCloser(bytes.NewReader([]byte("serverOOMERRR")))
+			resp.Body = body
+			return nil
 		},
 	}
 }
@@ -65,18 +73,21 @@ func websocketHandler(target string) http.Handler {
 		}
 		defer nc.Close()
 		defer d.Close()
-
 		err = r.Write(d)
 		if err != nil {
 			log.Printf("Error copying request to target: %v", err)
 			return
 		}
+		log.Println("furkanaaa")
 
 		errc := make(chan error, 2)
 		cp := func(dst io.Writer, src io.Reader) {
-			_, err := io.Copy(dst, src)
+
+			fmt.Println("OMERRRR")
+			_, err := io.Copy(dst, src)io.Reader
 			errc <- err
 		}
+		log.Println("furkanaaa")
 		go cp(d, nc)
 		go cp(nc, d)
 		<-errc
